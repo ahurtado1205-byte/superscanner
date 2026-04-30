@@ -35,7 +35,6 @@ jobs:
           version: 9
           
       - name: Install dependencies
-        working-directory: ./artifacts/super-scanner
         run: pnpm install
         
       - name: Build
