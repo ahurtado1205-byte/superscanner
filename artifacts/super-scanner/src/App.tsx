@@ -1,4 +1,5 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
+import { useHashLocation } from "wouter/use-hash-location";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,13 +23,15 @@ const queryClient = new QueryClient({
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/list/:id" component={ListDetail} />
-      <Route path="/historial" component={Historial} />
-      <Route path="/shared/:token" component={SharedList} />
-      <Route component={NotFound} />
-    </Switch>
+    <WouterRouter hook={useHashLocation}>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/list/:id" component={ListDetail} />
+        <Route path="/historial" component={Historial} />
+        <Route path="/shared/:token" component={SharedList} />
+        <Route component={NotFound} />
+      </Switch>
+    </WouterRouter>
   );
 }
 
