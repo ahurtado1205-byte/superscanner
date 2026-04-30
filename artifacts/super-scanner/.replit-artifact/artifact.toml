@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Super Scanner"
+version = "1.0.0"
+id = "artifacts/super-scanner"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 23320
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/super-scanner run dev"
+
+[services.env]
+PORT = "23320"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/super-scanner", "run", "build"]
+publicDir = "artifacts/super-scanner/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"

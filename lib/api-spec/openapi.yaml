@@ -1,0 +1,373 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: scanner
+    description: Product label scanning operations
+  - name: lists
+    description: Shopping list operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /scan:
+    post:
+      operationId: scanLabel
+      tags: [scanner]
+      summary: Scan a product label image
+      description: Uploads a base64 image of a product label and returns extracted product info
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanLabelBody"
+      responses:
+        "200":
+          description: Product info extracted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScannedProduct"
+        "400":
+          description: Invalid image or extraction failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /lists:
+    get:
+      operationId: getLists
+      tags: [lists]
+      summary: Get all shopping lists
+      responses:
+        "200":
+          description: List of shopping lists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ShoppingList"
+    post:
+      operationId: createList
+      tags: [lists]
+      summary: Create a new shopping list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateListBody"
+      responses:
+        "201":
+          description: Created shopping list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingList"
+
+  /lists/{id}:
+    get:
+      operationId: getList
+      tags: [lists]
+      summary: Get a shopping list with its items
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Shopping list with items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingListWithItems"
+        "404":
+          description: List not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteList
+      tags: [lists]
+      summary: Delete a shopping list
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /lists/{id}/items:
+    post:
+      operationId: addItemToList
+      tags: [lists]
+      summary: Add an item to a shopping list
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddItemBody"
+      responses:
+        "201":
+          description: Item added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListItem"
+
+  /lists/{id}/items/{itemId}:
+    patch:
+      operationId: updateListItem
+      tags: [lists]
+      summary: Update a list item (e.g. toggle checked, change quantity)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateItemBody"
+      responses:
+        "200":
+          description: Updated item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListItem"
+    delete:
+      operationId: deleteListItem
+      tags: [lists]
+      summary: Remove an item from a shopping list
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    ScanLabelBody:
+      type: object
+      properties:
+        imageBase64:
+          type: string
+          description: Base64-encoded image of the product label
+      required:
+        - imageBase64
+
+    ScannedProduct:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Product name extracted from the label
+        price:
+          type: ["number", "null"]
+          description: Price extracted from the label
+        quantity:
+          type: ["string", "null"]
+          description: Quantity/weight/volume extracted from the label
+        brand:
+          type: ["string", "null"]
+          description: Brand name extracted from the label
+        notes:
+          type: ["string", "null"]
+          description: Any additional notes about the product
+      required:
+        - name
+
+    ShoppingList:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - createdAt
+
+    ShoppingListWithItems:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ListItem"
+      required:
+        - id
+        - name
+        - createdAt
+        - items
+
+    ListItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        listId:
+          type: integer
+        name:
+          type: string
+        brand:
+          type: ["string", "null"]
+        price:
+          type: ["number", "null"]
+        quantity:
+          type: ["string", "null"]
+        units:
+          type: integer
+          default: 1
+        notes:
+          type: ["string", "null"]
+        checked:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - listId
+        - name
+        - units
+        - checked
+        - createdAt
+
+    CreateListBody:
+      type: object
+      properties:
+        name:
+          type: string
+      required:
+        - name
+
+    AddItemBody:
+      type: object
+      properties:
+        name:
+          type: string
+        brand:
+          type: ["string", "null"]
+        price:
+          type: ["number", "null"]
+        quantity:
+          type: ["string", "null"]
+        units:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]
+      required:
+        - name
+
+    UpdateItemBody:
+      type: object
+      properties:
+        checked:
+          type: ["boolean", "null"]
+        name:
+          type: ["string", "null"]
+        price:
+          type: ["number", "null"]
+        quantity:
+          type: ["string", "null"]
+        units:
+          type: ["integer", "null"]
+        notes:
+          type: ["string", "null"]

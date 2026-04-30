@@ -1,0 +1,19 @@
+packages:
+  "framer-motion": "For polished page transitions, list animations, and scanning effects"
+  "clsx": "For classname merging"
+  "tailwind-merge": "For classname merging"
+  "date-fns": "For formatting list creation dates"
+  "react-hook-form": "For robust form state management"
+
+images:
+  - path: "artifacts/super-scanner/public/images/empty-cart.png"
+    description: "A beautiful, minimalist 3D illustration of an empty wireframe shopping cart on a soft mint green background, cute and friendly style"
+    aspect_ratio: "1:1"
+  - path: "artifacts/super-scanner/public/images/logo-icon.png"
+    description: "A modern, minimalist logo icon combining a shopping bag and a camera lens, vibrant green gradient, transparent background"
+    aspect_ratio: "1:1"
+
+notes:
+  - "The app relies heavily on the device camera via <input type='file' capture='environment'> which works best on actual mobile devices."
+  - "The generated API client hooks are wrapped in custom hooks to handle React Query cache invalidation automatically."
+  - "API paths are assumed to be mounted at /api/* as per the OpenAPI spec."
