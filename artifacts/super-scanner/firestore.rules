@@ -1,0 +1,27 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Para Super Scanner, usamos Autenticación Anónima. 
+    // Cualquier usuario logueado en la app tiene un request.auth válido.
+    
+    // 1. Memoria de productos (Colección 'users')
+    // Solo el dueño de la sesión puede leer/escribir su memoria de productos.
+    match /users/{userId}/products/{productId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // 2. Listas de Compras (Colección 'lists')
+    // Como la app es colaborativa mediante links, si el usuario tiene acceso al ID de la lista
+    // y está autenticado, puede leerla y modificarla. 
+    // (El ID de 20 caracteres de Firebase actúa como una contraseña segura).
+    match /lists/{listId} {
+      allow read, write: if request.auth != null;
+      
+      // Sus ítems internos también pueden ser leídos y modificados si se tiene acceso a la lista
+      match /items/{itemId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+}

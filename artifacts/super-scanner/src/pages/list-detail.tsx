@@ -23,9 +23,8 @@ export default function ListDetail() {
   const { mutate: updateList } = useUpdateList();
   const { data: userProducts } = useUserProducts();
 
-  const [isManualAddOpen, setIsManualAddOpen] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [manualForm, setManualForm] = useState({ name: "", price: "", quantity: "", units: "1", brand: "" });
+  const [newItemName, setNewItemName] = useState("");
   const [editingItem, setEditingItem] = useState<{ id: string; units: number; price: string } | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [isShareOpen, setIsShareOpen] = useState(false);
@@ -71,22 +70,38 @@ export default function ListDetail() {
     );
   }
 
-  const handleManualAdd = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!manualForm.name.trim()) return;
+  const handleFastAdd = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newItemName.trim()) return;
 
     addItem({
       data: {
-        name: manualForm.name,
-        price: manualForm.price ? parseFloat(manualForm.price) : null,
-        quantity: manualForm.quantity || null,
-        units: manualForm.units ? parseInt(manualForm.units) : 1,
-        brand: manualForm.brand || null,
+        name: newItemName.trim(),
+        price: null,
+        quantity: null,
+        units: 1,
+        brand: null,
       }
     }, {
       onSuccess: () => {
-        setIsManualAddOpen(false);
-        setManualForm({ name: "", price: "", quantity: "", units: "1", brand: "" });
+        setNewItemName("");
+      }
+    });
+  };
+
+  const handleAddSuggestion = (product: UserProduct) => {
+    addItem({
+      data: {
+        name: product.name,
+        price: product.price || null,
+        quantity: product.quantity || null,
+        units: 1,
+        brand: product.brand || null,
+      }
+    }, {
+      onSuccess: () => {
+        setNewItemName("");
+        setShowSuggestions(false);
       }
     });
   };
@@ -177,9 +192,9 @@ export default function ListDetail() {
             <p className="text-muted-foreground max-w-sm mx-auto mb-8">
               Añade productos a la lista con el botón de abajo.
             </p>
-            <Button variant="outline" className="rounded-full" onClick={() => setIsManualAddOpen(true)}>
+            <Button variant="outline" className="rounded-full" onClick={() => document.getElementById('fast-add-input')?.focus()}>
               <Plus className="w-4 h-4 mr-2" />
-              Añadir Manualmente
+              Añadir Producto
             </Button>
           </motion.div>
         )}
@@ -354,131 +369,75 @@ export default function ListDetail() {
           </div>
         )}
 
-        {/* Botón Añadir Producto Inline */}
-        <div className="mt-8 flex justify-center pb-8">
-          <Button 
+        {/* Barra de adición rápida (Inline) */}
+        <div className="sticky bottom-4 z-40 mt-8 pb-4">
+          <form 
+            onSubmit={handleFastAdd} 
             className={cn(
-              "h-14 px-8 rounded-full shadow-xl hover:scale-105 active:scale-95 text-base gap-2 transition-colors",
-              isPrecompra 
-                ? "bg-primary text-primary-foreground shadow-primary/30" 
-                : "bg-emerald-600 text-white shadow-emerald-600/30 hover:bg-emerald-700"
+              "relative p-2 rounded-full border bg-card/95 backdrop-blur flex items-center gap-2 shadow-lg focus-within:ring-2 focus-within:ring-primary/20 transition-all",
+              isPrecompra ? "border-primary/20 shadow-primary/10" : "border-emerald-500/30 shadow-emerald-600/20"
             )}
-            onClick={() => setIsManualAddOpen(true)}
           >
-            <Plus className="w-5 h-5" />
-            {isPrecompra ? "Añadir Producto" : "Encontré otro producto"}
-          </Button>
-        </div>
-      </main>
-
-      {/* Manual Add Dialog */}
-      <Dialog open={isManualAddOpen} onOpenChange={setIsManualAddOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Añadir Producto</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleManualAdd} className="space-y-4 pt-4">
-            <div className="relative">
-              <label className="text-sm font-semibold mb-1.5 block">Nombre del Producto *</label>
+            {/* Dropdown de Sugerencias (arriba de la barra) */}
+            {showSuggestions && newItemName.length > 1 && (
+              <div className="absolute bottom-[calc(100%+8px)] left-0 z-50 w-full bg-popover border border-border rounded-xl shadow-xl overflow-hidden mb-1">
+                {userProducts
+                  .filter(p => p.name.toLowerCase().includes(newItemName.toLowerCase()) && p.name.toLowerCase() !== newItemName.toLowerCase())
+                  .slice(0, 4)
+                  .map(product => (
+                    <button
+                      key={product.id}
+                      type="button"
+                      className="w-full text-left px-4 py-3 hover:bg-muted flex items-center gap-3 transition-colors border-b border-border/40 last:border-0"
+                      onClick={() => handleAddSuggestion(product)}
+                    >
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <History className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm text-foreground truncate">{product.name}</p>
+                        {(product.brand || product.price) && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {product.brand && <span>{product.brand}</span>}
+                            {product.brand && product.price && <span> • </span>}
+                            {product.price && <span className="text-primary font-medium">{formatPrice(product.price)}</span>}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+              </div>
+            )}
+            
+            <div className="flex-1 min-w-0">
               <Input
-                placeholder="Ej. Leche descremada"
-                value={manualForm.name}
+                id="fast-add-input"
+                placeholder="Escribe un producto y dale Enter..."
+                value={newItemName}
                 onChange={(e) => {
-                  setManualForm({...manualForm, name: e.target.value});
+                  setNewItemName(e.target.value);
                   setShowSuggestions(true);
                 }}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                autoFocus
+                className="border-0 shadow-none focus-visible:ring-0 px-4 text-base bg-transparent h-12"
+                autoComplete="off"
               />
-              {/* Dropdown de Sugerencias */}
-              {showSuggestions && manualForm.name.length > 1 && (
-                <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden">
-                  {userProducts
-                    .filter(p => p.name.toLowerCase().includes(manualForm.name.toLowerCase()) && p.name.toLowerCase() !== manualForm.name.toLowerCase())
-                    .slice(0, 4)
-                    .map(product => (
-                      <button
-                        key={product.id}
-                        type="button"
-                        className="w-full text-left px-4 py-3 hover:bg-muted flex items-center gap-3 transition-colors border-b border-border/40 last:border-0"
-                        onClick={() => {
-                          setManualForm({
-                            ...manualForm,
-                            name: product.name,
-                            price: product.price ? String(product.price) : "",
-                            quantity: product.quantity || "",
-                            brand: product.brand || "",
-                          });
-                          setShowSuggestions(false);
-                        }}
-                      >
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <History className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm text-foreground truncate">{product.name}</p>
-                          {(product.brand || product.price) && (
-                            <p className="text-xs text-muted-foreground truncate">
-                              {product.brand && <span>{product.brand}</span>}
-                              {product.brand && product.price && <span> • </span>}
-                              {product.price && <span className="text-primary font-medium">{formatPrice(product.price)}</span>}
-                            </p>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                </div>
+            </div>
+            
+            <Button 
+              type="submit" 
+              disabled={!newItemName.trim() || isAdding}
+              className={cn(
+                "h-12 w-12 p-0 rounded-full shrink-0 shadow-sm transition-all", 
+                isPrecompra ? "" : "bg-emerald-600 hover:bg-emerald-700 text-white"
               )}
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="text-sm font-semibold mb-1.5 block">Unidades</label>
-                <Input
-                  type="number"
-                  min="1"
-                  placeholder="1"
-                  value={manualForm.units}
-                  onChange={(e) => setManualForm({...manualForm, units: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-semibold mb-1.5 block">Precio ($)</label>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  value={manualForm.price}
-                  onChange={(e) => setManualForm({...manualForm, price: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-semibold mb-1.5 block">Peso/Vol.</label>
-                <Input
-                  placeholder="1L, 500g"
-                  value={manualForm.quantity}
-                  onChange={(e) => setManualForm({...manualForm, quantity: e.target.value})}
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-semibold mb-1.5 block">Marca</label>
-              <Input
-                placeholder="Opcional"
-                value={manualForm.brand}
-                onChange={(e) => setManualForm({...manualForm, brand: e.target.value})}
-              />
-            </div>
-            <DialogFooter className="pt-4">
-              <Button type="button" variant="ghost" onClick={() => setIsManualAddOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={!manualForm.name.trim() || isAdding}>
-                {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : "Guardar"}
-              </Button>
-            </DialogFooter>
+            >
+              {isAdding ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
+            </Button>
           </form>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </main>
 
       {/* Edit Item Dialog */}
       <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>

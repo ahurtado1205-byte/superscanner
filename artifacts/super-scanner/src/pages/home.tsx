@@ -103,6 +103,7 @@ export default function Home() {
   const [isNewListOpen, setIsNewListOpen] = useState(false);
   const [newListName, setNewListName] = useState("");
   const [newListType, setNewListType] = useState<"compra" | "precompra">("compra");
+  const [listToDelete, setListToDelete] = useState<string | null>(null);
 
   const handleCreateList = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +121,14 @@ export default function Home() {
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    if (confirm("¿Eliminar esta lista?")) deleteList({ id });
+    setListToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (listToDelete) {
+      deleteList({ id: listToDelete });
+      setListToDelete(null);
+    }
   };
 
   const openNew = (type: "compra" | "precompra") => {
@@ -296,6 +304,26 @@ export default function Home() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!listToDelete} onOpenChange={(open) => !open && setListToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Archivar esta lista?</DialogTitle>
+            <DialogDescription>
+              La lista se quitará de esta pantalla, pero podrás seguir viendo su resumen y el gasto en tu Historial.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="pt-4">
+            <Button type="button" variant="ghost" onClick={() => setListToDelete(null)}>
+              Cancelar
+            </Button>
+            <Button type="button" variant="destructive" onClick={confirmDelete}>
+              Archivar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
